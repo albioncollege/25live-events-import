@@ -1,5 +1,4 @@
 <?php
-
 /*
 Plugin Name:  25Live Event Import
 Plugin URI:   https://jpederson.com
@@ -11,6 +10,10 @@ License:      GPL2
 License URI:  https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain:  25live
 */
+
+// set up a global to enable/disable debug that just shows a preview of the first record in the file so you can map values.
+global $events_import_debug;
+$events_import_debug = false;
 
 
 // start cron on plugin activation
@@ -32,10 +35,10 @@ add_action( 'import_25live', 'do_25live_import' );
 // the import function
 function do_25live_import() {
     
-    // get the plugin options
     // let's get $wpdb ready to use
-    global $wpdb;
+    global $wpdb, $events_import_debug;
 
+    // get the plugin options
     // check and see if the functionality is enabled
     $events_import_enable = get_field( '25live_enable', 'option' );
     if ( empty( $events_import_enable ) ) $events_import_enable = true;
@@ -49,6 +52,7 @@ function do_25live_import() {
         // pull events feed
         $events_raw = file_get_contents( $events_json_url );
 
+        // parse the json
         $events = json_decode( $events_raw );
 
         // if we have events
@@ -58,7 +62,7 @@ function do_25live_import() {
             foreach ( $events as $event ) {
 
                 // uncomment to dump first result and die for testing (prevents a full loop through all records)
-                // print_r( $event ); die;
+                if ( $events_import_debug ) print "<pre>"; print_r( $event ); print "</pre>"; die;
 
                 // get a previous post if it exists.
                 $previous_post = $wpdb->get_results( "SELECT * FROM `wp_postmeta` WHERE `meta_key`='_p_event_external_id' AND `meta_value`='" . $event->eventID . "' LIMIT 1;" );
