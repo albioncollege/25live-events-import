@@ -47,6 +47,7 @@ function do_25live_import() {
     $events_json_url = get_field( '25live_feed_url', 'option' );
     if ( empty( $events_json_url ) ) $events_json_url = 'https://25livepub.collegenet.com/calendars/events-for-albion-college-website.json';
 
+    // if the import feature is enabled
     if ( $events_import_enable ) {
         
         // pull events feed
@@ -55,14 +56,24 @@ function do_25live_import() {
         // parse the json
         $events = json_decode( $events_raw );
 
+        // if debug global is set to 'dump', we'll dump the full feed from 25Live
+        // so we can see the data structure. this helps with mapping new fields
+        // to their wp_postmeta values
+        if ( $events_import_debug == 'dump' ) {
+            print "<pre>";
+            print_r( $events );
+            print "</pre>";
+            die;
+        }
+
         // if we have events
         if ( !empty( $events ) ) {
 
             // start looping through them
             foreach ( $events as $event ) {
 
-                // uncomment to dump first result and die for testing (prevents a full loop through all records)
-                if ( $events_import_debug ) print "<pre>"; print_r( $event ); print "</pre>"; die;
+                // if debug is set to log
+                if ( $events_import_debug == 'log' ) print "<pre>";
 
                 // get a previous post if it exists.
                 $previous_post = $wpdb->get_results( "SELECT * FROM `wp_postmeta` WHERE `meta_key`='_p_event_external_id' AND `meta_value`='" . $event->eventID . "' LIMIT 1;" );
@@ -87,8 +98,8 @@ function do_25live_import() {
                     // and then add the external event id for our new post id
                     add_post_meta( $post_id, '_p_event_external_id', $event->eventID );
 
-                    // cli output
-                    echo "Added new event: " . $event->title . "\n";
+                    // log output
+                    if ( $events_import_debug == 'log' ) print "Add event: <strong>\"" . $event->title . "\"</strong>\n";
 
                 } else {
 
@@ -101,8 +112,8 @@ function do_25live_import() {
                     // update the post data from the original
                     wp_update_post( $post_data );
 
-                    // cli output
-                    echo "Updated existing event: " . $event->title . "\n";
+                    // log output
+                    if ( $events_import_debug == 'log' ) print "Update event: <strong>\"" . $event->title . "\"</strong>\n";
 
                 }
 
@@ -126,6 +137,7 @@ function do_25live_import() {
                 // loop through the custom fields from 25live
                 foreach ( $event->customFields as $event_cf ) {
 
+                    // example of grabbing specific field id and add as postmeta
                     // if ( $event_cf->fieldID == 23458 ) update_post_meta( $post_id, 'Event State', $event_cf->value );
 
                     // store the category
@@ -147,7 +159,10 @@ function do_25live_import() {
 
                                 // add our new post to that category
                                 if ( wp_set_post_terms( $post_id, $cat_info['term_id'], 'tribe_events_cat', 1 ) ) {
-                                    echo "Added event to category: " . $tag_name . "\n";
+                                    
+                                    // log output
+                                    if ( $events_import_debug == 'log' ) print " - Add event to category: " . $tag_name . "\n";
+
                                 }
 
                             } else {
@@ -157,12 +172,18 @@ function do_25live_import() {
 
                                 // if that worked
                                 if ( $cat_info ) {
-                                    echo "Added event category: " . $tag_name . "\n";
+                                    
+                                    // log output
+                                    if ( $events_import_debug == 'log' ) print " - Create event category: " . $tag_name . "\n";
+
                                 }
 
                                 // add our new post to that category
                                 if ( wp_set_post_terms( $post_id, $cat_info['term_id'], 'tribe_events_cat', 1 ) ) {
-                                    echo "Added event to category: " . $tag_name . "\n";
+                                    
+                                    // log output
+                                    if ( $events_import_debug == 'log' ) print " - Add event to category: " . $tag_name . "\n";
+
                                 }
 
                             }
@@ -175,6 +196,9 @@ function do_25live_import() {
                         update_post_meta( $post_id, $event_cf->label, $event_cf->value );
 
                     }
+
+                    // log output
+                    if ( $events_import_debug == 'log' ) print "<pre>";
 
                 } // end custom field loop
 
