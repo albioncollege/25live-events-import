@@ -32,6 +32,34 @@ function start_25live_cron() {
 add_action( 'import_25live', 'do_25live_import' );
 
 
+// process the custom fields into a simpler array
+function process_25live_custom_fields( $custom_fields ) {
+
+    // empty fields output
+    $fields_output = array();
+
+    // if we have custom fields passed in
+    if ( !empty( $custom_fields ) ) {
+
+        // loop through the custom fields for this event
+        foreach ( $custom_fields as $cf ) {
+
+            // generate an array key from the field label
+            $key = sanitize_title( $cf->label );
+
+            // load it into the array
+            $fields_output[ $key ] = $cf->value;
+
+        }
+
+    }
+
+    // return the custom fields array
+    return $fields_output;
+
+}
+
+
 // the import function
 function do_25live_import() {
     
@@ -74,6 +102,10 @@ function do_25live_import() {
 
                 // if debug is set to log
                 if ( $events_import_debug == 'log' ) print "<pre>";
+
+                // process the custom fields
+                $event->fields = process_25live_custom_fields( $event->customFields );
+                if ( $events_import_debug == 'log' ) print_r( $event->fields );
 
                 // get a previous post if it exists.
                 $previous_post = $wpdb->get_results( "SELECT * FROM `wp_postmeta` WHERE `meta_key`='_p_event_external_id' AND `meta_value`='" . $event->eventID . "' LIMIT 1;" );
@@ -197,10 +229,10 @@ function do_25live_import() {
 
                     }
 
-                    // log output
-                    if ( $events_import_debug == 'log' ) print "<pre>";
-
                 } // end custom field loop
+
+                // log output
+                if ( $events_import_debug == 'log' ) print "<pre>";
 
             } // end event loop
 
@@ -211,9 +243,7 @@ function do_25live_import() {
 }
 
 
-
-
-
+// admin interface fields in ACF
 add_action( 'acf/include_fields', function() {
 	if ( ! function_exists( 'acf_add_local_field_group' ) ) {
 		return;
@@ -322,6 +352,8 @@ add_action( 'acf/include_fields', function() {
         'show_in_rest' => 0,
     ) );
 } );
+
+
 
 add_action( 'acf/init', function() {
 	acf_add_options_page( array(
