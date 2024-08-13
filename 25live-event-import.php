@@ -166,70 +166,37 @@ function do_25live_import() {
                 update_post_meta( $post_id, 'Permalink', $event->permaLinkUrl );
                 update_post_meta( $post_id, 'Event Action URL', $event->eventActionUrl );
 
-                // loop through the custom fields from 25live
-                foreach ( $event->customFields as $event_cf ) {
+                // if we have a 'categories' custom field.
+                if ( !empty( $event->fields['categories'] ) ) {
 
-                    // example of grabbing specific field id and add as postmeta
-                    // if ( $event_cf->fieldID == 23458 ) update_post_meta( $post_id, 'Event State', $event_cf->value );
+                    // check if our category exists.
+                    $cat_info = term_exists( $event->fields['categories'], 'tribe_events_cat' );
 
-                    // store the category
-                    if ( $event_cf->fieldID == 28364 ) {
+                    // if the category doesn't exist
+                    if ( !$cat_info ) {
 
-                        // split out multiple categories by comma
-                        $event_cats = explode( ',', $event_cf->value );
-
-                        // loop through the categories
-                        foreach ( $event_cats as $event_cat ) {
-
-                            $tag_name = str_replace( 'Audience - ', '', $event_cat );
-
-                            // check if our term exists.
-                            $cat_info = term_exists( $tag_name, 'tribe_events_cat' );
-
-                            // if the term exists
-                            if ( $cat_info ) {
-
-                                // add our new post to that category
-                                if ( wp_set_post_terms( $post_id, $cat_info['term_id'], 'tribe_events_cat', 1 ) ) {
-                                    
-                                    // log output
-                                    if ( $events_import_debug == 'log' ) print " - Add event to category: " . $tag_name . "\n";
-
-                                }
-
-                            } else {
-
-                                // create the category (returns either new category ID or old one)
-                                $cat_info = wp_insert_term( $tag_name, 'tribe_events_cat' );
-
-                                // if that worked
-                                if ( $cat_info ) {
-                                    
-                                    // log output
-                                    if ( $events_import_debug == 'log' ) print " - Create event category: " . $tag_name . "\n";
-
-                                }
-
-                                // add our new post to that category
-                                if ( wp_set_post_terms( $post_id, $cat_info['term_id'], 'tribe_events_cat', 1 ) ) {
-                                    
-                                    // log output
-                                    if ( $events_import_debug == 'log' ) print " - Add event to category: " . $tag_name . "\n";
-
-                                }
-
-                            }
-
+                        // create the category (returns new category info)
+                        $cat_info = wp_insert_term( $event->fields['categories'], 'tribe_events_cat' );
+                        if ( $cat_info ) {
+                            if ( $events_import_debug == 'log' ) print " - Create event category: " . $event->fields['categories'] . "\n";
                         }
-
-                    } else {
-                        
-                        // if it's not the category, just add it as a custom field so we have the info in the event.
-                        update_post_meta( $post_id, $event_cf->label, $event_cf->value );
 
                     }
 
-                } // end custom field loop
+                    // add our new post to that category
+                    if ( wp_set_post_terms( $post_id, $cat_info['term_id'], 'tribe_events_cat', 1 ) ) {
+                        if ( $events_import_debug == 'log' ) print " - Add event to category: " . $event->fields['categories'] . "\n";
+                    }
+                    
+                } // end if have category
+
+                // custom field loop
+                foreach ( $event->fields as $event_cf_key => $event_cf_value ) {
+
+                    // if it's not the category, just add it as a custom field so we have the info in the event.
+                    update_post_meta( $post_id, $event_cf_key, $event_cf_value );
+
+                }
 
                 // log output
                 if ( $events_import_debug == 'log' ) print "<pre>";
