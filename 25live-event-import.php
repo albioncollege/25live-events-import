@@ -110,11 +110,22 @@ function do_25live_import() {
                 // get a previous post if it exists.
                 $previous_post = $wpdb->get_results( "SELECT * FROM `wp_postmeta` WHERE `meta_key`='_p_event_external_id' AND `meta_value`='" . $event->eventID . "' LIMIT 1;" );
 
+                // clean up the location
+                $location_clean = 
+                    str_replace( '-', " - ", 
+                    str_replace( 'Room-', "Room ", 
+                    str_replace( 'Classroom-', "Classroom ", 
+                    str_replace( 'OLIN-', "", 
+                    str_replace( 'KELLOGG-', "", 
+                    str_replace( 'LUDING-', "", 
+                        $event->location
+                ) ) ) ) ) );
+
                 // set up an array of the post data
                 $post_data = array(
                     'post_author' => 24,
                     'post_title' => $event->title,
-                    'post_content' => $event->description,
+                    'post_content' => $event->description . "<p><strong>Location:</strong> " . $location_clean . "</p>",
                     'post_type' => 'tribe_events',
                     'post_status' => 'publish',
                     'comment_status' => 'closed',
@@ -148,6 +159,52 @@ function do_25live_import() {
                     if ( $events_import_debug == 'log' ) print "Update event: <strong>\"" . $event->title . "\"</strong>\n";
 
                 }
+
+
+                /*
+                // slugify the location value
+                $location_clean_slug = sanitize_title( $location_clean );
+
+                // get the venue from tribe
+                $term_exist = $wpdb->get_results( "SELECT * FROM `wp_posts` WHERE `post_name`='" . $location_clean_slug . "' AND `post_type`='tribe_venue' LIMIT 1;" );
+
+                // if we have the venue already
+                if ( !empty( $term_exist ) ) {
+
+                    // since the post exists already, set the id
+                    $venue_id = $term_exist[0]->post_id;
+                    
+                    // log existing venue
+                    if ( $events_import_debug == 'log' ) print " - Venue exists: " . $location_clean . "\n";
+
+                }  else {
+                                    
+                    // set up an array of the venue data
+                    $venue_data = array(
+                        'post_author' => 24,
+                        'post_title' => $location_clean,
+                        'post_name' => $location_clean_slug,
+                        'post_content' => "",
+                        'post_type' => 'tribe_venue',
+                        'post_status' => 'publish',
+                        'comment_status' => 'closed',
+                        'ping_status' => 'closed'
+                    );
+                    
+                    // insert it first
+                    $venue_id = wp_insert_post( $venue_data );
+
+                    // log new venue
+                    if ( $events_import_debug == 'log' ) print " - Create venue: " . $location_clean . "\n";
+
+                }
+
+                // add post to venue taxonomy
+                update_post_meta( $post_id, '_EventVenueID', $venue_id );
+                */
+
+                // log new venue
+                if ( $events_import_debug == 'log' ) print " - Add post to venue: " . $location_clean . "\n";
 
                 // format some times
                 $start_time = strtotime( $event->startDateTime );
