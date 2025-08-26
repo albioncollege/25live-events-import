@@ -217,7 +217,7 @@ function do_25live_import() {
                 // set update some event details to postmeta (they'll be added if they don't exist)
                 update_post_meta( $post_id, '_p_event_location_text', $event->location );
                 update_post_meta( $post_id, '_EventStartDate', date( 'Y-m-d H:i:s', $start_time ) );
-                update_post_meta( $post_id, '_EventEndDate',date( 'Y-m-d H:i:s', $start_time ) );
+                update_post_meta( $post_id, '_EventEndDate',date( 'Y-m-d H:i:s', $end_time ) );
                 update_post_meta( $post_id, '_EventStartDateUTC', date( 'Y-m-d H:i:s', $start_time_utc ) );
                 update_post_meta( $post_id, '_EventEndDateUTC', date( 'Y-m-d H:i:s', $end_time_utc ) );
                 update_post_meta( $post_id, 'Permalink', $event->permaLinkUrl );
